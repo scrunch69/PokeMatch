@@ -1,18 +1,12 @@
 #root {
-	max-width: 414px;
-	max-height: 800px;
-	/* display: flex; */
-	/* justify-content: center; */
+	max-width: 100vw;
+	max-height: 100dvh;
 	margin: 0 auto;
 	text-align: center;
 }
 
 .outer-container {
-	width: 374px; /* 414px - 2*20px */
-	height: 760px; /* 800px - 2*20px */
-
 	margin: 20px;
-
 	/* background-color: #eeeeee;
 	padding: 20px;
 	border-radius: 12px;
@@ -34,10 +28,10 @@
 }
 
 .pokemon-image {
-	width: 75%;
+	width: 65%;
 	height: auto;
 
-	margin: 1rem 0;
+	margin: 0;
 
 	object-fit: contain;
 	border-radius: 12px;
@@ -50,7 +44,7 @@
 .stats-table {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	gap: 1rem;
+	gap: 0.5rem;
 	margin-bottom: 2rem;
 }
 
