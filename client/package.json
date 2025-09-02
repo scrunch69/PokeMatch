@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:mocks": "cross-env VITE_USE_MOCKS=true vite",
     "start": "node src/index.js",
-    "build": "cd client && npm install && vite build",
+    "build": "npm install && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
