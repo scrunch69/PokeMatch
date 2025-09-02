@@ -17,7 +17,8 @@ export const SocketProvider = ({ children }) => {
     const [selectStatErrorSignal, setSelectStatErrorSignal] = useState(false);
 
     useEffect(() => {
-        const socket = io("http://localhost:3001", {
+        // const socket = io("http://localhost:3001", {
+        const socket = io({
             auth: {
                 uuid: getOrCreateUUID(),
             },
