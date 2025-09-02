@@ -35,7 +35,7 @@ app.use(express.static(path.join(__dirname, "../../client/dist")));
 
 socketService.init();
 
-app.get("*", (req, res) => {
+app.get("/{*any}", (req, res) => {
     res.sendFile(path.join(__dirname, "../../client/dist/index.html"));
 });
 
