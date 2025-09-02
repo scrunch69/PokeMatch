@@ -1,108 +1,128 @@
+import { useState, useEffect, useCallback } from "react";
+import { PAGES } from "./constants.js";
+import { TIMINGS, GAME_PHASES } from "../../shared/constants.js";
+import { useSocket } from "./contexts/SocketContext";
+import HomePage from "./components/menu/home/HomePage";
+import EnterNamePage from "./components/menu/enterName/EnterNamePage";
+import RoomPage from "./components/menu/room/RoomPage";
+import MatchLayout from "./components/match/layout/MatchLayout";
+import SelectStatPage from "./components/match/SelectStat/SelectStatPage";
+import BattlePage from "./components/match/battle/BattlePage";
+import VictoryPage from "./components/match/victory/VictoryPage";
+
 import "./App.css";
-import StatCard from "./components/StatCard";
-import TypeCard from "./components/TypeCard";
-import { useState, useEffect } from "react";
-import { defaultPokemon } from "./constants";
 
 function App() {
-	const [activeStat, setActiveStat] = useState(null);
-	const [pokemon, setPokemon] = useState(defaultPokemon);
+    const [currentPage, setCurrentPage] = useState(PAGES.HOME);
 
-	useEffect(() => {
-		getNewPokemon();
-	}, []);
+    const [isWipingOut, setIsWipingOut] = useState(false);
+    const [isWipingIn, setIsWipingIn] = useState(false);
 
-	async function getNewPokemon() {
-		const response = await fetch("/api/randomPokemon");
-		const data = await response.json();
+    const { roomState } = useSocket();
 
-		const imageUrl = data.sprites.other["official-artwork"].front_default;
-		const img = new Image();
-		img.src = imageUrl;
+    const { roomCrashSignal } = useSocket();
+    const [isFirstRender, setIsFirstRender] = useState(true);
 
-		img.onload = () => {
-			setPokemon(data);
-		};
-	}
+    const handleNavigate = useCallback(
+        (page, transition) => {
+            if (currentPage === page) return;
 
-	function onActionButtonClick() {
-		getNewPokemon();
-	}
+            if (!transition) {
+                setCurrentPage(page);
+                return;
+            }
 
-	function handleStatCardClick(statName) {
-		setActiveStat(statName);
-		console.log("Stat active:", activeStat);
-	}
+            // Start the wipe-out animation.
+            setIsWipingOut(true);
 
-	return (
-		<div className='outer-container'>
-			<h1 className='pokemon-name'>
-				{pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}
-			</h1>
+            // After the wipe-out animation completes, update the page and start the wipe-in animation.
+            setTimeout(() => {
+                setCurrentPage(page);
+                setIsWipingOut(false);
+                setIsWipingIn(true);
+            }, TIMINGS.PAGE_TRANSITION); // Must match the wipe-out animation duration
 
-			<img
-				className='pokemon-image'
-				src={pokemon.sprites.other["official-artwork"].front_default}
-				alt={pokemon.name}
-			/>
-			<div className='type-list'>
-				{pokemon.types.map((typeInfo) => (
-					<TypeCard
-						key={typeInfo.type.name}
-						typeName={typeInfo.type.name}
-					/>
-				))}
-			</div>
-			<div className='stats-table'>
-				<StatCard
-					statName='💖 HP'
-					statValue={pokemon.stats[0].base_stat}
-					onStatCardClick={handleStatCardClick}
-				/>
-				<StatCard
-					statName='💨 Speed'
-					statValue={pokemon.stats[5].base_stat}
-					onStatCardClick={handleStatCardClick}
-				/>
-				<StatCard
-					statName='⚔️ Attack'
-					statValue={pokemon.stats[1].base_stat}
-					onStatCardClick={handleStatCardClick}
-				/>
-				<StatCard
-					statName='🛡️ Defense'
-					statValue={pokemon.stats[2].base_stat}
-					onStatCardClick={handleStatCardClick}
-				/>
-				<StatCard
-					statName='✨ Sp. Attack'
-					statValue={pokemon.stats[3].base_stat}
-					onStatCardClick={handleStatCardClick}
-				/>
-				<StatCard
-					statName='🔷 Sp. Defense'
-					statValue={pokemon.stats[4].base_stat}
-					onStatCardClick={handleStatCardClick}
-				/>
-				<StatCard
-					statName='⚖️ Weight'
-					statValue={pokemon.weight / 10 + " kg"}
-					onStatCardClick={handleStatCardClick}
-				/>
-				<StatCard
-					statName='📏 Height'
-					statValue={pokemon.height + " m"}
-					onStatCardClick={handleStatCardClick}
-				/>
-			</div>
-			<button
-				type='button'
-				className='action-button'
-				onClick={onActionButtonClick}
-			>
-				Next Pokemon!
-			</button>
-		</div>
-	);
+            // After the wipe-in animation completes, reset the state.
+            setTimeout(() => {
+                setIsWipingIn(false);
+            }, 3000); // (Wipe-out duration + wipe-in duration)
+        },
+        [currentPage]
+    );
+
+    const renderPage = () => {
+        switch (currentPage) {
+            case PAGES.HOME:
+                return <HomePage onNavigate={handleNavigate} />;
+            case PAGES.ENTER_NAME:
+                return <EnterNamePage onNavigate={handleNavigate} />;
+            case PAGES.ROOM:
+                return <RoomPage onNavigate={handleNavigate} />;
+            case PAGES.MATCH_LAYOUT:
+                return <MatchLayout />;
+            case PAGES.SELECT_STAT:
+                return <SelectStatPage />;
+            case PAGES.BATTLE:
+                return <BattlePage />;
+            case PAGES.VICTORY:
+                return <VictoryPage onNavigate={handleNavigate} />;
+            default:
+                return <HomePage onNavigate={handleNavigate} />;
+        }
+    };
+    useEffect(() => {
+        if (isFirstRender) {
+            setIsFirstRender(false);
+            return;
+        }
+        if (roomCrashSignal) {
+            setCurrentPage(PAGES.HOME);
+            alert(
+                "There was an oopsie on the server and your room crashed. Returning to Home..."
+            );
+        }
+    }, [roomCrashSignal, isFirstRender]);
+
+    useEffect(() => {
+        if (import.meta.env.VITE_USE_MOCKS) {
+            handleNavigate(PAGES.ENTER_NAME);
+            // handleNavigate(PAGES.ROOM);
+        }
+    }, [handleNavigate]);
+
+    useEffect(() => {
+        if (roomState) {
+            if (roomState.game) {
+                switch (roomState.game.phase) {
+                    case GAME_PHASES.GAME_FINISHED:
+                        handleNavigate(PAGES.VICTORY, true);
+                        break;
+                    case GAME_PHASES.BATTLE:
+                        handleNavigate(PAGES.BATTLE, true);
+                        break;
+                    case GAME_PHASES.SELECT_STAT:
+                        handleNavigate(PAGES.SELECT_STAT, true);
+                        break;
+                }
+            }
+        }
+    }, [roomState, handleNavigate]);
+
+    return (
+        <>
+            <div className="page-wrapper">
+                {/* The current page is always rendered */}
+                {renderPage(currentPage)}
+                {/* The wipe element, visible only during a transition */}
+                {(isWipingOut || isWipingIn) && (
+                    <div
+                        className={`animation-container ${
+                            isWipingOut ? "wipe-out-active" : ""
+                        } ${isWipingIn ? "wipe-in-active" : ""}`}
+                    ></div>
+                )}
+            </div>
+        </>
+    );
 }
 export default App;
