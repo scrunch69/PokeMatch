@@ -15,14 +15,18 @@ export const SocketProvider = ({ children }) => {
     const [roomCrashSignal, setRoomCrashSignal] = useState(false);
     const [nameErrorSignal, setNameErrorSignal] = useState(false);
     const [selectStatErrorSignal, setSelectStatErrorSignal] = useState(false);
-
     useEffect(() => {
-        // const socket = io("http://localhost:3001", {
-        const socket = io({
-            auth: {
-                uuid: getOrCreateUUID(),
-            },
-        });
+        const socket = import.meta.env.DEV
+            ? io("http://localhost:3001", {
+                  auth: {
+                      uuid: getOrCreateUUID(),
+                  },
+              })
+            : io({
+                  auth: {
+                      uuid: getOrCreateUUID(),
+                  },
+              });
         setSocket(socket);
 
         socket.on("connect_error", (err) => {
