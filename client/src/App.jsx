@@ -78,7 +78,7 @@ function App() {
         if (roomCrashSignal) {
             setCurrentPage(PAGES.HOME);
             alert(
-                "There was an oopsie on the server and your room crashed. Returning to Home..."
+                "There was an oopsie on the server and your room crashed!! Returning to Home..."
             );
         }
     }, [roomCrashSignal, isFirstRender]);
